@@ -1,0 +1,6 @@
+-Wall
+-Wno-unused-variable
+-Wno-address-of-packed-member
+-Wno-int-to-pointer-cast
+-Iinclude
+-Ilibgsfw/include

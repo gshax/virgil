@@ -1,0 +1,3 @@
+[submodule "libgsfw"]
+	path = libgsfw
+	url = https://github.com/gshax/libgsfw.git
