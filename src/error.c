@@ -16,6 +16,10 @@ const char* error_string(virgil_error_t error) {
             return "xmodem transfer error";
         case VIRGIL_DDR_INIT:
             return "ddr initialization failed";
+        case VIRGIL_NAND_INIT:
+            return "nand initialization failed";
+        case VIRGIL_NAND_ECC:
+            return "uncorrectable nand ecc error";
         default:
             return "unknown error";
     }

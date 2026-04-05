@@ -18,12 +18,6 @@ SECTIONS
 	  *(.text)
 	} > virgil
 
-	.mmc : {
-	} > virgil
-
-	.nand : {
-	} > virgil
-
 	.rodata : { *(.rodata*) } > virgil
 	.data :   { *(.data) } > virgil
 	.got :    { *(.got) } > virgil

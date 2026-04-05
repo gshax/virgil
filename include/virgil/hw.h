@@ -16,6 +16,7 @@
 /* peripheral base addresses */
 #define DVF101_CMU_BASE         0x05300000
 #define DVF101_SYSCFG_BASE      0x05200000
+#define DVF101_NFC_BASE         0x05400000
 #define DVF101_GPIO_BASE        0x05000000
 #define DVF101_UART1_BASE       0x05a00000
 #define DVF101_UART2_BASE       0x05b00000
@@ -29,12 +30,12 @@
 #define CMU_UART2_CTRL          0x2030
 #define CMU_UART3_CTRL          0x2034
 #define CMU_UART4_CTRL          0x2038
+#define CMU_NFC_CTRL            0x203c
 
 /* clock ctrl register bits (common layout for leaf peripherals) */
+#define CMU_CTRL_RESET          (1 << 0)
 #define CMU_CTRL_APB_CLK_EN     (1 << 4)
-
-/* legacy clock enable register (still functional on DVF101) */
-#define CMU_SWCLKEN1            0x0058
+#define CMU_CTRL_AHB_CLK_EN     (1 << 5)
 
 /* PLL registers — PLL_BASE(n) = 0x1000 + (n-1) * 0x14 */
 #define CMU_PLL1_UNIT_CTRL      0x1000
@@ -61,7 +62,7 @@
 #define SYSCFG_CHIP_ID          0x1c
 #define SYSCFG_CHIP_REV         0x20
 
-/* IO mux registers */
+/* IO mux registers (2-bit fields per pin) */
 #define SYSCFG_IOM1             0x200
 #define SYSCFG_IOM2             0x204
 #define SYSCFG_IOM3             0x208

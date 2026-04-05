@@ -79,6 +79,8 @@ virgil_error_t chainload_prepare(void* image, virgil_chain_detection_t* fingerpr
     /* move image to correct location */
     status = chainload_move(fingerprint);
     if (status) { return status; }
+
+    return VIRGIL_OK;
 }
 
 virgil_error_t chainload_boot(virgil_chain_detection_t* fingerprint) {
