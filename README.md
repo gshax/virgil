@@ -8,9 +8,14 @@ proof-of-concept replacement preloader for DSPG DVF-series SoCs
 # clone with submodules
 git clone https://github.com/gshax/virgil.git --recursive
 
-# build mkboot
 cd libgsfw
-make build/native/mkboot
+
+# build mkboot
+make tools
+
+# build libgsfw (header parsing and min libc)
+make EMBEDDED=1 libgsfw
+
 cd ..
 
 # build virgil

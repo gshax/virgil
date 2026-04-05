@@ -2,13 +2,13 @@
 
 #include <stddef.h>
 
-typedef struct dspg_bootrom_api {
-	int	(*bootdev_read)(void *dest, unsigned long offset, unsigned long size);
-	unsigned long	(*crc32)(void *buffer, unsigned long size);
-	void	(*clkchg_pre)(int clk, unsigned long freq);
-	void	(*clkchg_post)(int clk, unsigned long freq);
-	int	(*xmodem_rcv)(void *dest, unsigned long max_size);
-	void	(*udelay)(unsigned long usec);
+typedef struct dspg_dvf101_bootrom_api {
+	int	(*bootdev_read)(void* dest, unsigned long offset, unsigned long size);
+	unsigned long (*crc32)(void* buffer, unsigned long size);
+	void (*clkchg_pre)(int clk, unsigned long freq);
+	void (*clkchg_post)(int clk, unsigned long freq);
+	int (*xmodem_rcv)(void* dest, unsigned long max_size, unsigned long baud_detect);
+	void (*udelay)(unsigned long usec);
 
 	/* sboot_check_hdr
 	 *
@@ -18,7 +18,7 @@ typedef struct dspg_bootrom_api {
 	 * 0 = integrity verified
 	 * !0 = error (look at bootrom.h for error codes)
 	 */
-	unsigned long	(*sboot_check_hdr)(void *hdr);
+	unsigned long (*sboot_check_hdr)(void* hdr);
 
 	/* sboot_check_img
 	 *
@@ -28,14 +28,16 @@ typedef struct dspg_bootrom_api {
 	 * 0 = equals
 	 * !0 = not equals
 	 */
-	unsigned long	(*sboot_check_img)(unsigned char *img, size_t imglen,
-				unsigned char expected_sha[32]);
+	unsigned long (*sboot_check_img)(
+		unsigned char* img, size_t imglen, unsigned char expected_sha[32]
+	);
 	/* sha256
 	 *
 	 * digest <= sha256[message]
 	 */
-	void	(*sha256)(const unsigned char *message, unsigned int len,
-			unsigned char *digest);
+	void (*sha256)(
+		const unsigned char* message, unsigned int len, unsigned char *digest
+	);
 
 	/* expmod - modular exponentiation
 	 *
@@ -48,8 +50,10 @@ typedef struct dspg_bootrom_api {
 	 * 0 = success
 	 * !0 = error
 	 */
-	int	(*expmod)(unsigned char cb[256], unsigned char *mb, unsigned int mlen,
-			unsigned long el, unsigned char *nb, unsigned int nlen);
+	int (*expmod)(
+		unsigned char cb[256], unsigned char* mb, unsigned int mlen,
+		unsigned long el, unsigned char* nb, unsigned int nlen
+	);
 
 	/* is_dev_secured
 	 *
@@ -59,5 +63,5 @@ typedef struct dspg_bootrom_api {
 	 * -1 = error reading OTP
 	 *
 	 */
-	int	(*is_dev_secured)(void);
-} dspg_bootrom_api_t;
+	int (*is_dev_secured)(void);
+} dspg_dvf101_bootrom_api_t;

@@ -13,3 +13,7 @@
 #define readl(a)      (*(volatile unsigned long *)(a))
 #define readw(a)      (*(volatile unsigned short *)(a))
 #define readb(a)      (*(volatile unsigned char *)(a))
+
+#define waitfor(x)       while (!(x))
+
+extern void __noreturn panic(char* str);

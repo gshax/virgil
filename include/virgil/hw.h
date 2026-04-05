@@ -7,6 +7,12 @@
  * as used in the Grandstream HT8xx series.
  */
 
+/* memory map */
+#define DVF_DRAM_BASE           0x40000000  /* PHYS_SDRAM_1 */
+#define DVF_UBOOT_LOAD_ADDR     0x41000000  /* CONFIG_SYS_TEXT_BASE / CONFIG_LOAD_ADDR */
+#define DVF_KERNEL_LOAD_ADDR    0x42000000  /* CONFIG_SYS_LOAD_ADDR */
+#define DVF_DTB_LOAD_ADDR       0x43000000  /* CONFIG_SYS_DEVTREE_OFFSET */
+
 /* peripheral base addresses */
 #define DVF101_CMU_BASE         0x05300000
 #define DVF101_SYSCFG_BASE      0x05200000

@@ -96,15 +96,13 @@ void uart_init(unsigned int baudrate)
 
 void uart_putc(char c)
 {
+	/* LF to CRLF */
 	if (c == '\n') {
-		/* wait for space */
-		while (readl(UART_BASE + UART_STAT) & UART_STAT_TX_FULL)
-			;
-		writel('\r', UART_BASE + UART_TX_DATA);
+		uart_putc('\r');
 	}
 
-	while (readl(UART_BASE + UART_STAT) & UART_STAT_TX_FULL)
-		;
+	/* wait for space */
+	waitfor(!(readl(UART_BASE + UART_STAT) & UART_STAT_TX_FULL));
 	writel(c, UART_BASE + UART_TX_DATA);
 }
 
@@ -119,12 +117,11 @@ int uart_tstc(void)
 	return !(readl(UART_BASE + UART_STAT) & UART_STAT_RX_EMPTY);
 }
 
-int uart_getc(void)
+char uart_getc(void)
 {
 	unsigned int data;
 
-	while (!uart_tstc())
-		;
+	waitfor(uart_tstc());
 
 	data = readl(UART_BASE + UART_RX_DATA);
 	if (data & 0x600) /* parity or frame error */
@@ -135,6 +132,5 @@ int uart_getc(void)
 
 void uart_flush_tx(void)
 {
-	while (readl(UART_BASE + UART_TX_FIFO_LVL) > 0)
-		;
+	waitfor(readl(UART_BASE + UART_TX_FIFO_LVL) == 0);
 }

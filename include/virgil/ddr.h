@@ -12,4 +12,4 @@
  *
  * returns 0 on success, -1 on memory test failure.
  */
-int ddr_init(const dspg_bootrom_api_t* rom);
+int ddr_init(const dspg_dvf101_bootrom_api_t* rom);

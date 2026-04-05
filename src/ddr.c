@@ -60,8 +60,7 @@ static void pll_reprogram(unsigned long unit_ctrl, unsigned long cfg1_addr,
 	/* gate output if PLL is currently active */
 	if (readl(unit_ctrl) & 0x80) {
 		writel(readl(unit_ctrl) | 4, unit_ctrl);
-		while (readl(unit_ctrl) & 0x80)
-			;
+		waitfor(!(readl(unit_ctrl) & 0x80));
 	}
 
 	/* write PLL configuration */
@@ -72,23 +71,20 @@ static void pll_reprogram(unsigned long unit_ctrl, unsigned long cfg1_addr,
 	val = readl(unit_ctrl);
 	if (!(val & 0x4000)) {
 		writel(val | 1, unit_ctrl);
-		while (!(readl(unit_ctrl) & 0x4000))
-			;
+		waitfor(readl(unit_ctrl) & 0x4000);
 		val = readl(unit_ctrl);
 	}
 
 	/* enable post-divider if needed */
 	if (!(val & 0x8000)) {
 		writel(val | 2, unit_ctrl);
-		while (!(readl(unit_ctrl) & 0x8000))
-			;
+		waitfor(readl(unit_ctrl) & 0x8000);
 		val = readl(unit_ctrl);
 	}
 
 	/* ungate output and wait for clock to go live */
 	writel(val & ~4, unit_ctrl);
-	while (!(readl(unit_ctrl) & 0x80))
-		;
+	waitfor(readl(unit_ctrl) & 0x80);
 }
 
 /*
@@ -101,16 +97,14 @@ static void pll4_reprogram(unsigned long cfg1, unsigned long cfg2)
 	/* gate if active */
 	if (readl(ctrl) & 0x80) {
 		writel(readl(ctrl) | 4, ctrl);
-		while (readl(ctrl) & 0x80)
-			;
+		waitfor(!(readl(ctrl) & 0x80));
 	}
 
 	/* write config, ungate, wait for lock */
 	writel(cfg1, DVF101_CMU_BASE + CMU_PLL4_CFG1);
 	writel(cfg2, DVF101_CMU_BASE + CMU_PLL4_CFG2);
 	writel(readl(ctrl) & ~4, ctrl);
-	while (!(readl(ctrl) & 0x80))
-		;
+	waitfor(readl(ctrl) & 0x80);
 }
 
 /*
@@ -194,8 +188,7 @@ static void ddr_phy_init(void)
 	unsigned long zero;
 
 	/* wait for PHY idle (bits 28-29 of status register) */
-	while ((readl(DDR_PHY_BASE + 0x308) & 0x30000000) != 0)
-		;
+	waitfor((readl(DDR_PHY_BASE + 0x308) & 0x30000000) == 0);
 
 	/* clear PHY status bits 0-1 */
 	do {
@@ -332,25 +325,22 @@ static void ddr_ctl_init(void)
 	writel(0x000101ff, DDR_CTL_BASE + 0x004);
 
 	/* wait for controller init complete */
-	while ((readl(DDR_CTL_BASE + 0x00c) & 0x1f) != 0x1f)
-		;
+	waitfor((readl(DDR_CTL_BASE + 0x00c) & 0x1f) == 0x1f);
 
 	/* trigger PHY training */
 	writel(1, DDR_PHY_BASE + 0x1b0);
 	writel(1, DDR_PHY_BASE + 0x320);
 
 	/* wait for training complete */
-	while (!(readl(DDR_PHY_BASE + 0x324) & 1))
-		;
+	waitfor(readl(DDR_PHY_BASE + 0x324) & 1);
 
 	/* wait for DDR ready */
-	while (!(readl(DDR_PHY_BASE + 0x004) & 1))
-		;
+	waitfor(readl(DDR_PHY_BASE + 0x004) & 1);
 }
 
 /* ---- memory test ---- */
 
-#define DDR_TEST_BASE   0x41000000
+#define DDR_TEST_BASE   DVF_UBOOT_LOAD_ADDR
 #define DDR_TEST_WORDS  16
 
 static const unsigned long test_pattern[DDR_TEST_WORDS] = {
@@ -386,7 +376,7 @@ static int ddr_memtest(void)
 
 /* ---- public API ---- */
 
-int ddr_init(const dspg_bootrom_api_t* rom)
+int ddr_init(const dspg_dvf101_bootrom_api_t* rom)
 {
 	if (readl(DDR_PHY_BASE + 0x004) & 1)
 		return 0;

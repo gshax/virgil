@@ -29,7 +29,7 @@ $(BUILD)/virgil.bin: $(BUILD)/virgil.elf
 	truncate -s %4 $(BUILD)/virgil.bin
 
 $(BUILD)/virgil.elf: $(OBJS)
-	$(LD) $(LDFLAGS) --start-group $(OBJS) $(LIBGCC) --end-group -o $@
+	$(LD) $(LDFLAGS) --start-group $(OBJS) $(LIBGCC) libgsfw/build/embedded/libgsfw.a --end-group -o $@
 
 $(BUILD)/obj/%.o: src/%.c
 	mkdir -p $(dir $@)
