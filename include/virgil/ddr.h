@@ -1,6 +1,6 @@
 #pragma once
 
-#include <virgil/romapi.h>
+#include <virgil/error.h>
 
 /*
  * DDR3 initialization for DVF101 (HT818)
@@ -12,4 +12,4 @@
  *
  * returns 0 on success, -1 on memory test failure.
  */
-int ddr_init(const dspg_dvf101_bootrom_api_t* rom);
+virgil_error_t ddr_init();

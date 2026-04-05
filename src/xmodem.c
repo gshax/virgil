@@ -8,6 +8,7 @@
 
 #include <stdint.h>
 #include <virgil/xmodem.h>
+#include <virgil/romapi.h>
 #include <virgil/uart.h>
 
 #define SOH     0x01
@@ -20,13 +21,6 @@
 #define INIT_TIMEOUT_MS 3000
 #define BYTE_TIMEOUT_MS 1000
 #define MAX_ERRORS      10
-
-static void (*delay_us)(unsigned long);
-
-void xmodem_init(const dspg_dvf101_bootrom_api_t *rom)
-{
-	delay_us = rom->udelay;
-}
 
 /* CRC-16/XMODEM: polynomial 0x1021, init 0x0000 */
 static uint16_t crc16(const uint8_t *data, int len)
@@ -46,7 +40,7 @@ static int uart_getc_timeout(unsigned long timeout_ms)
 	for (unsigned long i = 0; i < timeout_ms; i++) {
 		if (uart_tstc())
 			return (uint8_t)uart_getc();
-		delay_us(1000);
+		rom_api->udelay(1000);
 	}
 	return -1;
 }

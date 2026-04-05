@@ -3,7 +3,7 @@
 
 void __noreturn panic(char* str)
 {
-    uart_puts("\n\nPANIC: ");
+    uart_puts("\n\nunable to continue: ");
     uart_puts(str);
     uart_puts("\n");
     uart_flush_tx();

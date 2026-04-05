@@ -1,10 +1,5 @@
 #pragma once
 
-#include <virgil/romapi.h>
-
-/* store the udelay function pointer for timeout handling */
-void xmodem_init(const dspg_dvf101_bootrom_api_t *rom);
-
 /*
  * receive a file via XMODEM-CRC.
  *

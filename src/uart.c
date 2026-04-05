@@ -11,6 +11,7 @@
 
 #include <virgil/common.h>
 #include <virgil/hw.h>
+#include <virgil/romapi.h>
 #include <virgil/uart.h>
 
 #define UART_BASE DVF101_UART1_BASE
@@ -82,11 +83,9 @@ void uart_init(unsigned int baudrate)
 
 	/* if UART is currently active, drain TX FIFO first */
 	if (readl(UART_BASE + UART_CTL) & 1) {
-		while (readl(UART_BASE + UART_TX_FIFO_LVL) > 0)
-			;
+		waitfor(readl(UART_BASE + UART_TX_FIFO_LVL) <= 0);
 		/* let the shift register finish */
-		for (volatile int i = 0; i < 10000; i++)
-			;
+		rom_api->udelay(25000);
 	}
 
 	pclk = uart_get_pclk();
@@ -154,8 +153,7 @@ void uart_exit(void)
 	waitfor(readl(UART_BASE + UART_TX_FIFO_LVL) == 0);
 
 	/* let the shift register finish the last byte */
-	for (volatile int i = 0; i < 10000; i++)
-		;
+	rom_api->udelay(25000);
 
 	/* disable UART */
 	writel(0, UART_BASE + UART_CTL);

@@ -2,12 +2,17 @@
 
 #include <stddef.h>
 
-typedef struct dspg_dvf101_bootrom_api {
+typedef struct dspg_bootrom_api {
 	int	(*bootdev_read)(void* dest, unsigned long offset, unsigned long size);
+
 	unsigned long (*crc32)(void* buffer, unsigned long size);
+
 	void (*clkchg_pre)(int clk, unsigned long freq);
+
 	void (*clkchg_post)(int clk, unsigned long freq);
+
 	int (*xmodem_rcv)(void* dest, unsigned long max_size, unsigned long baud_detect);
+
 	void (*udelay)(unsigned long usec);
 
 	/* sboot_check_hdr
@@ -31,6 +36,7 @@ typedef struct dspg_dvf101_bootrom_api {
 	unsigned long (*sboot_check_img)(
 		unsigned char* img, size_t imglen, unsigned char expected_sha[32]
 	);
+
 	/* sha256
 	 *
 	 * digest <= sha256[message]
@@ -64,4 +70,6 @@ typedef struct dspg_dvf101_bootrom_api {
 	 *
 	 */
 	int (*is_dev_secured)(void);
-} dspg_dvf101_bootrom_api_t;
+} dspg_bootrom_api_t;
+
+extern const dspg_bootrom_api_t* rom_api;

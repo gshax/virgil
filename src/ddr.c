@@ -14,6 +14,7 @@
 #include <virgil/common.h>
 #include <virgil/hw.h>
 #include <virgil/ddr.h>
+#include <virgil/romapi.h>
 
 #define DDR_PHY_BASE    0x07200000
 #define DDR_CTL_BASE    0x07100000
@@ -245,7 +246,7 @@ static const unsigned long test_pattern[DDR_TEST_WORDS] = {
 	0xfedcba98, 0x76543210, 0xabcdef01, 0x23456789,
 };
 
-static int ddr_memtest(void)
+static virgil_error_t ddr_memtest(void)
 {
 	volatile unsigned long *ddr = (volatile unsigned long *)DVF_UBOOT_LOAD_ADDR;
 
@@ -263,23 +264,23 @@ static int ddr_memtest(void)
 			}
 		}
 		if (ok)
-			return 0;
+			return VIRGIL_OK;
 	}
 
-	return -1;
+	return VIRGIL_DDR_INIT;
 }
 
 /* ---- public API ---- */
 
-int ddr_init(const dspg_dvf101_bootrom_api_t *rom)
+virgil_error_t ddr_init()
 {
 	if (readl(DDR_PHY_BASE + 0x004) & 1)
-		return 0;
+		return VIRGIL_OK;
 
 	ddr_clock_init();
 	ddr_phy_init();
 	ddr_clock_finalize();
-	rom->udelay(1000);
+	rom_api->udelay(1000);
 	ddr_ctl_init();
 
 	return ddr_memtest();

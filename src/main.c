@@ -6,79 +6,51 @@
 #include <virgil/uart.h>
 #include <virgil/cmu.h>
 #include <virgil/ddr.h>
-#include <virgil/chainload.h>
-#include <virgil/xmodem.h>
-#include <gsfw/firmware/shared.h>
+#include <virgil/bootmethod.h>
 
-void __entry _start(uint32_t rom_version, const dspg_dvf101_bootrom_api_t* bootrom, int bootsel)
+const dspg_bootrom_api_t* rom_api;
+
+void __entry _start(uint32_t rom_version, const dspg_bootrom_api_t* _rom_api, int bootsel)
 {
-    /* let the bootrom's "ok" finish draining before we print */
-    bootrom->udelay(25000);
+    rom_api = _rom_api;
 
+    /* drain uart and then immediately do clock init */
+    rom_api->udelay(25000);
+    cmu_init();
+
+    /* figlet font "Roman", same as "DVF101" ASCII art found in U-Boot ^^ */
+    uart_puts(
+        "\n"
+        "             o8o                       o8o  oooo  \n"
+        "             `\"'                       `\"'  `888  \n"
+        "oooo    ooo oooo  oooo d8b  .oooooooo oooo   888  \n"
+        " `88.  .8'  `888  `888\"\"8P 888' `88b  `888   888  \n"
+        "  `88..8'    888   888     888   888   888   888  \n"
+        "   `888'     888   888     `88bod8P'   888   888  \n"
+        "    `8'     o888o d888b    `8oooooo.  o888o o888o \n"
+        "                           d\"     YD              \n"
+        "                           \"Y88888P'              \n"
+        "\n"
+    );
+
+    /* dump rom version and boot selection */
     char tmp[12];
-    uart_puts("\nvirgil\n");
     uart_puts("rom_version = ");
     uart_puts(itoa(rom_version, tmp, 16));
     uart_puts(", bootsel = ");
     uart_puts(itoa(bootsel, tmp, 16));
     uart_puts("\n");
 
-    uart_puts("cmu init...");
-    cmu_init(bootrom);
-    uart_puts("ok\n");
-
-    uart_puts("ddr init...");
-    if (ddr_init(bootrom) != 0) {
+    /* initialize dram */
+    uart_puts("initializing ddr... ");
+    if (ddr_init() != VIRGIL_OK) {
         uart_puts("failed!\n");
         panic("ddr initialization failed");
     }
-    uart_puts("ok!!\n\n");
+    uart_puts("ok!\n");
 
-    xmodem_init(bootrom);
-
+    /* for now, just try to boot from xmodem forever */
     while (1) {
-        void* load_addr = (void*)DVF_UBOOT_LOAD_ADDR;
-        uart_puts("awaiting xmodem transfer!\n");
-
-        int rcvd = xmodem_rcv(load_addr, 0x1000000);
-        bootrom->udelay(100000);
-        uart_puts("\n");
-
-        if (rcvd < 0) {
-            panic("xmodem transfer error");
-        }
-
-        /* detect image format */
-        uart_puts("checking image...\n");
-        virgil_chain_type_t type = chainload_detect(load_addr);
-        if (type == virgil_chain_unknown) {
-            uart_puts("unknown image format\n\n");
-            continue;
-        }
-
-        switch (type) {
-            case virgil_chain_gs:
-                uart_puts("grandstream image, ");
-                break;
-            default:
-                continue;
-        }
-
-        /* verify checksum */
-        if (chainload_checksum(type, load_addr, rcvd) != 0) {
-            uart_puts("checksum error!\n\n");
-            continue;
-        }
-        uart_puts("checksum ok!\n\n");
-
-        /* move image to correct location */
-        void* entrypoint = chainload_memmove(type, load_addr);
-        if (!entrypoint) {
-            uart_puts("memmove error!\n\n");
-            continue;
-        }
-
-        /* jump to entrypoint! */
-        ((void (*)(void))entrypoint)();
+        boot_xmodem();
     }
 }

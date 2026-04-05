@@ -1,7 +1,5 @@
 #pragma once
 
-#include <virgil/romapi.h>
-
 /*
  * configure PLLs and clock tree for normal operation.
  *
@@ -11,4 +9,4 @@
  *
  * PLL1 changes pclk, so the UART is reinitialized afterward.
  */
-void cmu_init(const dspg_dvf101_bootrom_api_t *rom);
+void cmu_init();

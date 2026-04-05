@@ -18,6 +18,7 @@
 #include <virgil/common.h>
 #include <virgil/hw.h>
 #include <virgil/cmu.h>
+#include <virgil/romapi.h>
 #include <virgil/uart.h>
 
 /* PLL4 register offsets */
@@ -85,7 +86,7 @@ static void pll4_reprogram(unsigned long cfg1, unsigned long cfg2)
 	waitfor(readl(ctrl) & 0x80);
 }
 
-void cmu_init(const dspg_dvf101_bootrom_api_t *rom)
+void cmu_init()
 {
 	/*
 	 * match the stock bootastic cmu_setup sequence:
@@ -109,10 +110,10 @@ void cmu_init(const dspg_dvf101_bootrom_api_t *rom)
 	 * arg 2 = sysclk change signal (0 = starting, 1 = done)
 	 */
 	unsigned long old_pclk = uart_get_pclk();
-	if (rom->clkchg_post)
-		rom->clkchg_post(1, old_pclk);
-	if (rom->clkchg_pre)
-		rom->clkchg_pre(2, 0);
+	if (rom_api->clkchg_post)
+		rom_api->clkchg_post(1, old_pclk);
+	if (rom_api->clkchg_pre)
+		rom_api->clkchg_pre(2, 0);
 
 	/*
 	 * PLL1: CPU core clock.
@@ -148,10 +149,10 @@ void cmu_init(const dspg_dvf101_bootrom_api_t *rom)
 
 	/* notify bootrom after clock change */
 	unsigned long new_pclk = uart_get_pclk();
-	if (rom->clkchg_pre)
-		rom->clkchg_pre(1, new_pclk);
-	if (rom->clkchg_post)
-		rom->clkchg_post(2, 1);
+	if (rom_api->clkchg_pre)
+		rom_api->clkchg_pre(1, new_pclk);
+	if (rom_api->clkchg_post)
+		rom_api->clkchg_post(2, 1);
 
 	/* reinit UART — pclk changed from ~6.25 MHz to ~250 MHz */
 	uart_init(115200);
