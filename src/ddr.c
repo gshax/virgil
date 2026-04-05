@@ -14,7 +14,6 @@
 #include <virgil/common.h>
 #include <virgil/hw.h>
 #include <virgil/ddr.h>
-#include <virgil/uart.h>
 
 #define DDR_PHY_BASE    0x07200000
 #define DDR_CTL_BASE    0x07100000
@@ -27,109 +26,6 @@
 #define CMU_P_EMMC_CTRL  0xf4
 #define CMU_P_ETH_CTRL   0xe0
 #define CMU_P_GPU_CTRL   0xd8
-
-/* PLL4 register offsets (no defines in hw.h since it's DDR-specific) */
-#define CMU_PLL4_UNIT_CTRL  0x103c
-#define CMU_PLL4_CFG1       0x1048
-#define CMU_PLL4_CFG2       0x104c
-
-/*
- * PLL_UNIT_CTRL bit map (shared across PLL1-4):
- *   bit 0  = PRE_DIV_EN
- *   bit 1  = POST_DIV_EN
- *   bit 2  = output gate (1 = gated/disabled)
- *   bit 7  = CLK_IN_USE (read-only, 1 = clock output active)
- *   bit 14 = PRE_DIV_EN_STAT
- *   bit 15 = POST_DIV_EN_STAT
- *
- * PLL4 lacks pre/post dividers and uses a simpler enable sequence.
- */
-
-/* ---- PLL setup ---- */
-
-/*
- * reprogram a PLL with pre/post dividers (PLL1-3 style).
- * sequence: gate output → write config → enable dividers → ungate → wait.
- */
-static void pll_reprogram(unsigned long unit_ctrl, unsigned long cfg1_addr,
-			   unsigned long cfg2_addr, unsigned long cfg1,
-			   unsigned long cfg2)
-{
-	unsigned long val;
-
-	/* gate output if PLL is currently active */
-	if (readl(unit_ctrl) & 0x80) {
-		writel(readl(unit_ctrl) | 4, unit_ctrl);
-		waitfor(!(readl(unit_ctrl) & 0x80));
-	}
-
-	/* write PLL configuration */
-	writel(cfg1, cfg1_addr);
-	writel(cfg2, cfg2_addr);
-
-	/* enable pre-divider if needed */
-	val = readl(unit_ctrl);
-	if (!(val & 0x4000)) {
-		writel(val | 1, unit_ctrl);
-		waitfor(readl(unit_ctrl) & 0x4000);
-		val = readl(unit_ctrl);
-	}
-
-	/* enable post-divider if needed */
-	if (!(val & 0x8000)) {
-		writel(val | 2, unit_ctrl);
-		waitfor(readl(unit_ctrl) & 0x8000);
-		val = readl(unit_ctrl);
-	}
-
-	/* ungate output and wait for clock to go live */
-	writel(val & ~4, unit_ctrl);
-	waitfor(readl(unit_ctrl) & 0x80);
-}
-
-/*
- * reprogram PLL4 (no pre/post dividers — simpler sequence).
- */
-static void pll4_reprogram(unsigned long cfg1, unsigned long cfg2)
-{
-	unsigned long ctrl = DVF101_CMU_BASE + CMU_PLL4_UNIT_CTRL;
-
-	/* gate if active */
-	if (readl(ctrl) & 0x80) {
-		writel(readl(ctrl) | 4, ctrl);
-		waitfor(!(readl(ctrl) & 0x80));
-	}
-
-	/* write config, ungate, wait for lock */
-	writel(cfg1, DVF101_CMU_BASE + CMU_PLL4_CFG1);
-	writel(cfg2, DVF101_CMU_BASE + CMU_PLL4_CFG2);
-	writel(readl(ctrl) & ~4, ctrl);
-	waitfor(readl(ctrl) & 0x80);
-}
-
-/*
- * configure PLL2 (DDR data clock) and PLL4 (DDR PHY reference).
- *
- * the bootrom locks both PLLs but leaves their outputs gated and at
- * default frequencies. we reprogram CFG1/CFG2 to the correct DDR
- * frequencies and ungate.
- *
- * PLL1 (CPU clock) is left untouched — changing it would break the
- * bootrom's UART baud rate.
- *
- * values from running HT818 u-boot (stock bootastic cmu_setup output).
- */
-static void ddr_pll_init(void)
-{
-	/* PLL2: DDR data clock */
-	pll_reprogram(DVF101_CMU_BASE + CMU_PLL2_UNIT_CTRL,
-		      DVF101_CMU_BASE + CMU_PLL2_CFG1,
-		      DVF101_CMU_BASE + CMU_PLL2_CFG2,
-		      0x0100000d, 0x1102de19);
-
-	/* PLL4: DDR PHY reference clock */
-	pll4_reprogram(0x0100000d, 0x12042519);
-}
 
 /* ---- DDR clock gating ---- */
 
@@ -340,7 +236,6 @@ static void ddr_ctl_init(void)
 
 /* ---- memory test ---- */
 
-#define DDR_TEST_BASE   DVF_UBOOT_LOAD_ADDR
 #define DDR_TEST_WORDS  16
 
 static const unsigned long test_pattern[DDR_TEST_WORDS] = {
@@ -352,7 +247,7 @@ static const unsigned long test_pattern[DDR_TEST_WORDS] = {
 
 static int ddr_memtest(void)
 {
-	volatile unsigned long *ddr = (volatile unsigned long *)DDR_TEST_BASE;
+	volatile unsigned long *ddr = (volatile unsigned long *)DVF_UBOOT_LOAD_ADDR;
 
 	writel(0, DDR_CTL_BASE + 0x04c);
 
@@ -376,24 +271,16 @@ static int ddr_memtest(void)
 
 /* ---- public API ---- */
 
-int ddr_init(const dspg_dvf101_bootrom_api_t* rom)
+int ddr_init(const dspg_dvf101_bootrom_api_t *rom)
 {
 	if (readl(DDR_PHY_BASE + 0x004) & 1)
 		return 0;
 
-	uart_puts("ddr init...");
-
-	uart_puts(" pll,");
-	ddr_pll_init();
-	uart_puts(" clk,");
 	ddr_clock_init();
-	uart_puts(" phy,");
 	ddr_phy_init();
 	ddr_clock_finalize();
 	rom->udelay(1000);
-	uart_puts(" ctl");
 	ddr_ctl_init();
 
-	uart_puts("\nmemtest... ");
 	return ddr_memtest();
 }

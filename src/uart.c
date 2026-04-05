@@ -32,36 +32,46 @@ static void uart_clk_enable(void)
 }
 
 /*
- * the UART peripheral clock (pclk) on DVF101 derives from the raw
- * oscillator, NOT from PLL1 output. the chain is:
+ * compute the UART peripheral clock (pclk).
  *
- *   mainclk → PLL1_POST_DIV → MCU_DIV → AXI_SYS_DIV → pclk
+ *   PLL1 gated:   mainclk (25 MHz) → dividers → pclk = 6.25 MHz
+ *   PLL1 active:  PLL1_out (1 GHz) → dividers → pclk = 250 MHz
  *
- * PLL1 feeds the CPU core but the APB bus divider chain starts from
- * the oscillator input. confirmed by register dump on HT818:
- *   mainclk = 25 MHz, AXI_SYS_DIV = 3+1 = 4, pclk = 6.25 MHz
- *   UART INT_DIV=3 FRAC_DIV=6 → 54 * 115200 = 6,220,800 Hz ✓
+ * PLL1 output = mainclk × fbdiv / refdiv, where fbdiv and refdiv
+ * are in PLL1_CFG2 bits [15:8] and [7:0] respectively.
+ * (verified: bootrom CFG2=0x11002801 → 25M × 40 / 1 = 1 GHz,
+ *  / AXI_SYS_DIV(4) = 250 MHz, matches u-boot UART dividers.)
  *
- * mainclk selection: SYSCFG_GCR0 bits [5:4].
- *   default (not 0x10) → 25 MHz
- *   0x10              → 50 MHz
+ * note: CFG2 readback may differ from what was written (the PLL
+ * hardware modifies some fields after lock). the formula is only
+ * reliable for the bootrom's original config. we avoid reprogramming
+ * PLL1_CFG2 to sidestep this issue.
  */
-static unsigned long uart_get_pclk(void)
+unsigned long uart_get_pclk(void)
 {
 	unsigned long gcr0 = readl(DVF101_SYSCFG_BASE + SYSCFG_GCR0);
 	unsigned long mainclk = ((gcr0 & 0x30) == 0x10) ? 50000000ul : 25000000ul;
 
-	/* PLL1 post-divider (passthrough for peripheral bus) */
+	unsigned long baseclk;
 	unsigned long pll1_ctrl = readl(DVF101_CMU_BASE + CMU_PLL1_UNIT_CTRL);
+
+	if (pll1_ctrl & 0x80) {
+		/* PLL1 active — compute output from CFG2 */
+		unsigned long cfg2 = readl(DVF101_CMU_BASE + CMU_PLL1_CFG2);
+		unsigned long fbdiv = (cfg2 >> 8) & 0xff;
+		unsigned long refdiv = cfg2 & 0xff;
+		if (refdiv == 0) refdiv = 1;
+		baseclk = mainclk * fbdiv / refdiv;
+	} else {
+		/* PLL1 gated — raw oscillator */
+		baseclk = mainclk;
+	}
+
 	unsigned long post_div = (pll1_ctrl >> 24) & 0x3f;
-
-	/* MCU main divider */
 	unsigned long mcu_div = readl(DVF101_CMU_BASE + CMU_MCU_DIV_VAL) & 0xf;
-
-	/* AXI system bus divider */
 	unsigned long axi_sys_div = (readl(DVF101_CMU_BASE + CMU_MCU_AXI_DIV_VAL) >> 12) & 0x3f;
 
-	return mainclk / (post_div + 1) / (mcu_div + 1) / (axi_sys_div + 1);
+	return baseclk / (post_div + 1) / (mcu_div + 1) / (axi_sys_div + 1);
 }
 
 void uart_init(unsigned int baudrate)
@@ -133,4 +143,20 @@ char uart_getc(void)
 void uart_flush_tx(void)
 {
 	waitfor(readl(UART_BASE + UART_TX_FIFO_LVL) == 0);
+}
+
+void uart_exit(void)
+{
+	if (!(readl(UART_BASE + UART_CTL) & 1))
+		return;
+
+	/* drain TX FIFO */
+	waitfor(readl(UART_BASE + UART_TX_FIFO_LVL) == 0);
+
+	/* let the shift register finish the last byte */
+	for (volatile int i = 0; i < 10000; i++)
+		;
+
+	/* disable UART */
+	writel(0, UART_BASE + UART_CTL);
 }

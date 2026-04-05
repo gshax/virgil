@@ -6,3 +6,5 @@ void uart_puts(const char* s);
 char uart_getc(void);
 int  uart_tstc(void);
 void uart_flush_tx(void);
+void uart_exit(void);
+unsigned long uart_get_pclk(void);

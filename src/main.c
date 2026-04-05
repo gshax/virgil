@@ -4,6 +4,7 @@
 #include <virgil/romapi.h>
 #include <virgil/hw.h>
 #include <virgil/uart.h>
+#include <virgil/cmu.h>
 #include <virgil/ddr.h>
 #include <virgil/chainload.h>
 #include <virgil/xmodem.h>
@@ -22,6 +23,11 @@ void __entry _start(uint32_t rom_version, const dspg_dvf101_bootrom_api_t* bootr
     uart_puts(itoa(bootsel, tmp, 16));
     uart_puts("\n");
 
+    uart_puts("cmu init...");
+    cmu_init(bootrom);
+    uart_puts("ok\n");
+
+    uart_puts("ddr init...");
     if (ddr_init(bootrom) != 0) {
         uart_puts("failed!\n");
         panic("ddr initialization failed");
