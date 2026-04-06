@@ -56,9 +56,8 @@ virgil_error_t boot_nand(int slot) {
     const nand_geo_t* geo = nand_geometry();
     virgil_error_t status;
 
-    char tmp[12];
     uart_puts("\nloading from nand offset 0x");
-    uart_puts(itoa(offset, tmp, 16));
+    uart_puthex(offset);
     uart_puts("...\n");
 
     /* step 1: read first page to get image header */
@@ -83,7 +82,7 @@ virgil_error_t boot_nand(int slot) {
     uart_puts("detected ");
     uart_puts(chainload_format_name(fingerprint.type));
     uart_puts(", size=0x");
-    uart_puts(itoa(fingerprint.full_size, tmp, 16));
+    uart_puthex(fingerprint.full_size);
     uart_puts("\n");
 
     /* step 3: load the rest of the image */

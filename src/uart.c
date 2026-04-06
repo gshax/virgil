@@ -9,6 +9,7 @@
  * if needed, but uart_putc/puts will work immediately.
  */
 
+#include <gsfw/libc.h>
 #include <virgil/common.h>
 #include <virgil/hw.h>
 #include <virgil/romapi.h>
@@ -119,6 +120,22 @@ void uart_puts(const char *s)
 {
 	while (*s)
 		uart_putc(*s++);
+}
+
+void uart_putint(int value, int base)
+{
+	char tmp[12];
+	uart_puts(itoa(value, tmp, base));
+}
+
+void uart_putdec(int value)
+{
+	uart_putint(value, 10);
+}
+
+void uart_puthex(int value)
+{
+	uart_putint(value, 16);
 }
 
 int uart_tstc(void)

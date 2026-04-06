@@ -12,7 +12,7 @@ virgil_error_t chainload_detect(void* header, virgil_chain_detection_t* fingerpr
 
     /* try Grandstream image */
     ht8_dvf101_image_hdr_t* gs_hdr = header;
-    if (gs_hdr->magic == GS_HT8_DVF101_FW_MAGIC) {
+    if (gs_hdr->magic == GS_HT8_DVF101_IMG_MAGIC) {
         fingerprint->type = virgil_chain_type_gs;
         fingerprint->full_size = gs_hdr->size_image;
     }

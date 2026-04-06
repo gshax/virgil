@@ -1,5 +1,8 @@
 #pragma once
 
+#define _STRINGIZE(x) #x
+#define STRINGIZE(x) _STRINGIZE(x)
+
 #define __entry __attribute__((section(".entry")))
 #define __noreturn __attribute__((noreturn))
 
