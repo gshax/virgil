@@ -36,23 +36,16 @@ make
 
 ## using it
 
-get the device into recovery mode and then upload the `virgil` image via XMODEM.
+### NAND
 
-you will know if it works:
+1. get root on the device
+2. copy the `virgil` image and `flash.sh` to `/tmp`
+3. `./flash.sh virgil`
+4. reboot
 
-```
-             o8o                       o8o  oooo  
-             `"'                       `"'  `888  
-oooo    ooo oooo  oooo d8b  .oooooooo oooo   888  
- `88.  .8'  `888  `888""8P 888' `88b  `888   888  
-  `88..8'    888   888     888   888   888   888  
-   `888'     888   888     `88bod8P'   888   888  
-    `8'     o888o d888b    `8oooooo.  o888o o888o 
-                           d"     YD              
-                           "Y88888P'              
+### recovery mode
 
-rom_version = 100, bootsel = 5
-initializing ddr... ok!
-
-awaiting xmodem transfer!
-```
+1. [get UART on the device](https://gshax.github.io/research/uart/)
+2. [get the device into recovery mode](https://gshax.github.io/research/uart/recovery_mode.html)
+3. upload the `virgil` image via XMODEM
+4. that's it

@@ -1,3 +1,5 @@
 build/
 virgil
 !include/virgil
+*.bin
+*.bak
